@@ -40,10 +40,12 @@ const { state, fs, yaml, config, Docker, dockerCfg, kubeCfg, kubeApi } = vi.hois
     default: vi.fn(),
   };
 
-  const Docker = vi.fn((conn) => ({
-    listContainers: vi.fn(async () => state.dockerContainersByServer[conn?.serverName] ?? state.dockerContainers),
-    listServices: vi.fn(async () => state.dockerServicesByServer[conn?.serverName] ?? state.dockerContainers),
-  }));
+  const Docker = vi.fn(function DockerMock(conn) {
+    return {
+      listContainers: vi.fn(async () => state.dockerContainersByServer[conn?.serverName] ?? state.dockerContainers),
+      listServices: vi.fn(async () => state.dockerServicesByServer[conn?.serverName] ?? state.dockerContainers),
+    };
+  });
 
   const dockerCfg = {
     default: vi.fn((serverName) => ({ conn: { serverName } })),
@@ -590,7 +592,7 @@ describe("utils/config/service-helpers", () => {
   it("servicesFromDocker tolerates per-server failures and still returns other results", async () => {
     state.dockerYaml = { "docker-a": {}, "docker-b": {} };
 
-    Docker.mockImplementationOnce(() => {
+    Docker.mockImplementationOnce(function DockerMockFailure() {
       throw new Error("boom");
     });
 
